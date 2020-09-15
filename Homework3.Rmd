@@ -1,0 +1,42 @@
+---
+title: "Homework3"
+author: "Keenan Anderson-Fears"
+date: "9/15/2020"
+output: pdf_document
+---
+```{r eval=FALSE, echo=TRUE}
+# I was unable to get a PLS algorithm of my own running but I included the concept I was aiming for along with perfoming one
+# using existing functions
+
+data <- read.csv("pwd/data.csv", sep="\t", header=T) # We first read in our data
+
+X <- standardize(data[,:i-1]) # We standardize our data
+Y <- data[,i-1] # Designate our outcome variable Y
+
+for i in ncol(X){ # We will iterate through each column of our data
+  
+  alpha <- sum(X[,i] * Y) # We compute alpha which is the sum of each predictor multiplied by its outcome
+  
+  Z <- sum(alpha[,i] * X[i]) # We then compute our vector of Z which is the sum of each predictor multiplied by its alpha
+  
+  theta <- lm(Y ~ Z) # Theta is then computed as the outcome regressed on our Z vector
+  
+  Orth <- X[,i] - (sum(Z * X[,i])/sum(Z * Z)) # We then orthogonalize our predictors with respect to our Z vector 
+  
+  # Therefore we should be able to get our linear coefficents from our Orth object 
+}
+```
+
+
+```{r}
+# Here we perform PLS-R using the pls library and its accompanying dataset gasoline with a leave-one-out CV of 10 folds
+library(pls)
+data(gasoline)
+
+gasTrain <- gasoline[1:50,]
+gasTest <- gasoline[51:60,]
+
+gas1 <- plsr(octane ~ NIR, ncomp=10, data=gasTrain, validation="LOO")
+summary(gas1)
+```
+
