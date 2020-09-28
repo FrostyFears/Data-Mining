@@ -1,0 +1,113 @@
+---
+title: "Homewwork 5"
+author: "Keenan Anderson-Fears"
+date: "9/28/2020"
+output: pdf_document
+---
+
+```{r}
+library(MASS)
+library(dplyr)
+library(ISLR)
+```
+
+
+```{r}
+# Implementation of LDA
+train = Smarket %>%
+  filter(Year < 2005)
+
+test = Smarket %>%
+  filter(Year >= 2005)
+
+model_LDA = lda(Direction~Lag1+Lag2, data = train)
+print(model_LDA)
+plot(model_LDA)
+```
+
+```{r}
+predictions_LDA = data.frame(predict(model_LDA, test))
+
+predictions_LDA_2 = cbind(test, predictions_LDA)
+
+predictions_LDA_2 %>%
+  count(class, Direction)
+
+predictions_LDA_2 %>%
+  summarize(score = mean(class == Direction))
+```
+
+```{r}
+# Implementation of QDA
+model_QDA = qda(Direction~Lag1+Lag2, data = train)
+model_QDA
+
+predictions_QDA = data.frame(predict(model_QDA, test))
+
+predictions_QDA = cbind(test, predictions_QDA)
+
+predictions_QDA %>%
+  count(class, Direction)
+
+predictions_QDA %>%
+  summarize(score = mean(class == Direction))
+```
+
+```{r}
+# Using a different dataset and plotting the grouping for LDA followed by QDA 
+library(RCurl)
+library(ggplot2)
+```
+
+```{r}
+f <- getURL('https://www.datascienceblog.net/data-sets/phoneme.csv')
+df <- read.csv(textConnection(f), header=T)
+```
+
+```{r}
+# LDA
+train <- grepl("^train", df$speaker)
+to.exclude <- c("row.names", "speaker", "g")
+feature.df <- df[, !colnames(df) %in% to.exclude]
+test.set <- subset(feature.df, !train)
+train.set <- subset(feature.df, train)
+train.responses <- subset(df, train)$g
+test.responses <- subset(df, !train)$g
+
+lda.model <- lda(train.set, grouping = train.responses)
+
+# Manually centering the data
+means <- colSums(lda.model$prior * lda.model$means)
+train.mod <- scale(train.set, center = means, scale = FALSE) %*% 
+             lda.model$scaling
+
+plot.df <- data.frame(train.mod, "Outcome" = train.responses)
+
+ggplot(plot.df, aes(x = LD1, y = LD2, color = Outcome)) + geom_point()
+```
+
+```{r}
+lda.prediction.train <- predict(lda.model, train.set)
+all.equal(lda.prediction.train$x, train.mod)
+
+posteriors <- lda.prediction.train$posterior
+pred.class <- names(which.max(posteriors[1,]))
+print(paste0("Posterior of predicted class '", pred.class, 
+    "' is: ", round(posteriors[1,pred.class], 2)))
+
+classes <- colnames(posteriors)
+res <- do.call(rbind, (lapply(classes, function(x) apply(posteriors[train.responses == x, ], 2, mean))))
+rownames(res) <- classes
+print(round(res, 3)) 
+```
+From our Posterior table of the individual classes we see that the four classes the model finds most uncertian, ao/aa & dcl/sh, are also similarly grouped in our visualizations
+
+```{r}
+# QDA
+qda.model <- qda(train.set, grouping = train.responses)
+
+qda.preds <- predict(qda.model, test.set)
+acc <- length(which(qda.preds$class == test.responses))/length(test.responses)
+print(paste0("Accuracy of QDA is: " , round(acc, 2)))
+```
+
