@@ -1,0 +1,56 @@
+---
+title: "Parametric vs Nonparametric Bootstrap"
+author: "Keenan Anderson-Fears"
+date: "11/10/2020"
+output: pdf_document
+---
+
+```{r}
+x = as.matrix(data.frame(GenotypeA=rnorm(100,0,1),GenotypeB=rnorm(100,0,1),GenotypeC=rnorm(100,0,1)))
+z = matrix(rnorm(3,0,1),nrow=3,ncol=1)
+e = as.matrix(data.frame(Error=rnorm(100,0,1)))
+eqt = (x %*% z + -1 + e)
+y = as.matrix(data.frame(Outcome=eqt))
+colnames(y)[1] <- "Outcome"
+PopSim = data.frame(cbind(y, x, deparse.level=2))
+
+fun <- function(PopSim, idx){ 
+  bsFit <- lm(Outcome ~ ., subset=idx, data=PopSim)
+  coef(bsFit)
+}
+
+fun2 <- function(PopSim){
+  ybar <- mean(PopSim$Outcome)
+  para <- c(log(ybar),mean(log(PopSim$Outcome)))
+  ll <- function(k){
+      if (k <= 0) out <- 1e200
+      else out <- lgamma(k)-k*(log(k)-1-para[1]+para[2])
+      out
+  }
+  khat <- nlm(ll,ybar^2/var(PopSim$Outcome))$estimate
+  c(ybar, khat)
+}
+
+fun3 <- function(PopSim, mle){
+  out <- PopSim
+  out$Outcome <- rexp(nrow(out), 1/mle)
+  out
+}
+
+# For my parametric bootstrap, I was unable to get the function working correctly, the above two functions, fun2 & fun3, are taken from the
+# examples given in the vignette, however I could not get them to work either as there was no explaination of k and I didnt find any reference
+# to similar functions in the presentations
+
+# Hoever the Non-Parametric bootstrap worked just fine
+bootstrapNP <- boot(PopSim, fun, R=1000)
+#bootstrapP <- boot(PopSim, fun2, R=999, sim="parametric", ran.gen=fun3, mle=mean(PopSim$Outcome))
+z
+boot.ci(bootstrapNP, type="basic")
+#boot.ci(bootstrapP, type="basic")
+```
+
+
+
+
+
+
