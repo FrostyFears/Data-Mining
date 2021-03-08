@@ -1,0 +1,11 @@
+# The derivation for the ADAM algorithm scaling factor from Kingma et al.
+1. V(t) = (1 - B2) * sum(B2 * g^2)
+2. E[V(t)] = E[(1 - B2) * sum(B2 * g^2)]
+3. E[V(t)] = E[g^2] * (1 - B2) * sum(B2 + C)
+4. E[V(t)] = E[g^2] * (1 - B2) + C
+
+# The motivation for the use of a scaling factor is that early on in our curve, we
+# do not have many values to compute our average, thus incurring substantial bias in our calculations
+# for cumulative gradients and cumulative squared gradients. Therefore, the use of a scaling factor
+# aids in the boosting both our cumulative gradients and cumulative squared gradients, s & r
+# respectively.
